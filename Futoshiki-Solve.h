@@ -17,7 +17,7 @@
 using namespace std;
 // Parameters and constants
 #define POPULATION_SIZE 300
-#define MAX_ITERATIONS 1000
+#define MAX_ITERATIONS 10000
 #define X1 0
 #define Y1 1
 #define X2 2

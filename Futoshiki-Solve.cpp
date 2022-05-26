@@ -219,7 +219,7 @@ void userPrompt() {
             }
 
             // once in 20 generations add the overall best solution
-            if (i % 100 == 0)
+            if (i % 20 == 0 && i > 0)
                 currentGenSolutions.push_back(currentBestSol);
 
             ++i;
@@ -250,10 +250,6 @@ void basicSolver() {
             mutate(children[0]);
             mutate(children[1]);
         } while (getFitnessScore(children[0]) < maxScore * 5 / 16 && getFitnessScore(children[1]) < maxScore * 5 / 16);
-//        while (getFitnessScore(children[0]) < getFitnessScore(currentGenSolutions[parent1]) ||
-//               getFitnessScore(children[0]) < getFitnessScore(currentGenSolutions[parent2]) ||
-//               getFitnessScore(children[1]) < getFitnessScore(currentGenSolutions[parent1]) ||
-//               getFitnessScore(children[1]) < getFitnessScore(currentGenSolutions[parent2]));
         newSolArr.push_back(children[0]);
         newSolArr.push_back(children[1]);
     }
@@ -283,10 +279,6 @@ void darwinianSolver() {
             mutate(children[0]);
             mutate(children[1]);
         } while (getFitnessScore(children[0]) < maxScore * 5 / 16 && getFitnessScore(children[1]) < maxScore * 5 / 16);
-//        while (getFitnessScore(children[0]) < getFitnessScore(currentGenSolutions[parent1]) ||
-//               getFitnessScore(children[0]) < getFitnessScore(currentGenSolutions[parent2]) ||
-//               getFitnessScore(children[1]) < getFitnessScore(currentGenSolutions[parent1]) ||
-//               getFitnessScore(children[1]) < getFitnessScore(currentGenSolutions[parent2]));
         newSolArr.push_back(children[0]);
         newSolArr.push_back(children[1]);
     }
@@ -315,10 +307,6 @@ void lamarckianSolver() {
             mutate(children[0]);
             mutate(children[1]);
         } while (getFitnessScore(children[0]) < maxScore * 5 / 16 && getFitnessScore(children[1]) < maxScore * 5 / 16);
-//        while (getFitnessScore(children[0]) < getFitnessScore(currentGenSolutions[parent1]) ||
-//               getFitnessScore(children[0]) < getFitnessScore(currentGenSolutions[parent2]) ||
-//               getFitnessScore(children[1]) < getFitnessScore(currentGenSolutions[parent1]) ||
-//               getFitnessScore(children[1]) < getFitnessScore(currentGenSolutions[parent2]));
         newSolArr.push_back(children[0]);
         newSolArr.push_back(children[1]);
     }
@@ -442,18 +430,20 @@ void mutate(SOL &sol) {
     mt19937 engine(rd());
     int x1, y1, y2;
     // Rolls new row and column indices while at least one of them is a fixed point
-    while (true) {
-        x1 = distributionIndices(engine);
-        y1 = distributionIndices(engine);
-        y2 = distributionIndices(engine);
-        if (isFixedPoint(x1, y1) || isFixedPoint(x1, y2))
-            continue;
-        break;
+    for (int i = 0; i < boardSize; ++i) {
+        while (true) {
+            x1 = distributionIndices(engine);
+            y1 = distributionIndices(engine);
+            y2 = distributionIndices(engine);
+            if (isFixedPoint(x1, y1) || isFixedPoint(x1, y2))
+                continue;
+            break;
+        }
+        // Mutate by swapping two members of a row vector
+        int x1Val = sol[x1][y1], x2Val = sol[x1][y2];
+        sol[x1][y1] = x2Val;
+        sol[x1][y2] = x1Val;
     }
-    // Mutate by swapping two members of a row vector
-    int x1Val = sol[x1][y1], x2Val = sol[x1][y2];
-    sol[x1][y1] = x2Val;
-    sol[x1][y2] = x1Val;
 }
 
 // Perform crossover of two vectors
