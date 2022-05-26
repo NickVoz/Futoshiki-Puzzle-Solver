@@ -1,51 +1,22 @@
-#include <iostream>
-#include <vector>
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <tuple>
-#include <algorithm>
-#include <random>
-using namespace std;
-
-#define POPULATION_SIZE 300
-#define MAX_ITERATIONS 1000
-#define X1 0
-#define Y1 1
-#define X2 2
-#define Y2 3
-#define X 0
-#define Y 1
-#define VAL 2
-#define STARTING_SCORE 1
-#define SCORE_PER_COL 20 // 20
-#define SCORE_PER_LT 5 // 5
-
-#define SOL_ARR vector<vector<vector<int>>>
-#define SOL vector<vector<int>>
+#include "Futoshiki-Solve.h"
 
 int boardSize;
 int maxScore;
 
 // Data structures
-vector<vector<vector<int>>> currentGenSolutions;
-vector<vector<vector<int>>> prevGenSolutions;
+SOL_ARR currentGenSolutions;
 vector<tuple<int, int, int>> fixedPointsData; // Formatted as (x, y, VAL)
 vector<tuple<int, int>> fixedPoints; // Coordinates only - formatted as (x, y)
 vector<tuple<int, int, int, int>> cellRelations; // Formatted as (x1, y1, x2, y2)
-vector<vector<int>> currentBestSol;
+SOL currentBestSol;
 std::random_device rd;
-
-
-int getFitnessScore(vector<vector<int>> solution);
-bool isValidSolution(vector<vector<int>> solution);
 
 
 
 // Returns maximum solution fitness score from current solution vector
 int getMaxSolScore() {
     int score = 0;
-    for (auto sol : currentGenSolutions) {
+    for (auto sol: currentGenSolutions) {
         if (getFitnessScore(sol) > score)
             score = getFitnessScore(sol);
     }
@@ -55,7 +26,7 @@ int getMaxSolScore() {
 // Returns position of maximal score
 int getMaxScoreIndex() {
     int score = 0, i = 0, index;
-    for (auto sol : currentGenSolutions) {
+    for (auto sol: currentGenSolutions) {
         if (getFitnessScore(sol) > score) {
             score = getFitnessScore(sol);
             index = i;
@@ -74,17 +45,17 @@ bool isSolved() {
 // Calculates average score of current iteration
 double getAvgScore() {
     double counter;
-    for (auto item : currentGenSolutions) {
+    for (auto item: currentGenSolutions) {
         counter += getFitnessScore(item);
     }
     return counter / currentGenSolutions.size();
 }
 
 // Returns a random solution from the solutions array, biased towards higher fitness solutions
-vector<int> getBiasedSolutionIndexArray(vector<vector<vector<int>>> solVector) {
+vector<int> getBiasedSolutionIndexArray(SOL_ARR solVector) {
     vector<int> output;
     int index = 0;
-    for (auto item : solVector) {
+    for (auto item: solVector) {
         int score = getFitnessScore(item);
         for (int i = 0; i < score; ++i) {
             output.push_back(index);
@@ -113,7 +84,7 @@ bool isFixedPoint(int x, int y) {
 }
 
 // Create mutation in received solution
-void mutate(vector<vector<int>>& sol) {
+void mutate(SOL &sol) {
     uniform_int_distribution<int> distribution(1, boardSize);
     uniform_int_distribution<int> distributionIndices(0, boardSize - 1);
     mt19937 engine(rd());
@@ -139,10 +110,10 @@ void mutate(vector<vector<int>>& sol) {
 //}
 }
 
-vector<vector<vector<int>>> crossover(vector<vector<int>> vec1, vector<vector<int>> vec2) {
+SOL_ARR crossover(SOL vec1, SOL vec2) {
     uniform_int_distribution<int> distribution(0, boardSize - 1);
-    vector<vector<vector<int>>> output;
-    vector<vector<int>> outputVec1, outputVec2;
+    SOL_ARR output;
+    SOL outputVec1, outputVec2;
 
     mt19937 engine(rd());
     int x = distribution(engine), i;
@@ -171,7 +142,7 @@ vector<vector<vector<int>>> crossover(vector<vector<int>> vec1, vector<vector<in
 }
 
 // Calculates fintess score of received vector
-int getFitnessScore(vector<vector<int>> solution) {
+int getFitnessScore(SOL solution) {
     int x1, y1, x2, y2, i, j, k, score = 1;
     bool flg;
     if (solution.size() < boardSize)
@@ -197,7 +168,7 @@ int getFitnessScore(vector<vector<int>> solution) {
     }
 
     // Check 'greater than' values
-    for (auto coor : cellRelations) {
+    for (auto coor: cellRelations) {
         x1 = get<X1>(coor);
         y1 = get<Y1>(coor);
         x2 = get<X2>(coor);
@@ -217,7 +188,7 @@ void printFormatError() {
 /******************Initialization Functions******************/
 
 // Initializes a vector with random values. Each member of the vector represents a row of numbers in the puzzle board.
-void initializeVector(vector<vector<int>>& vec) {
+void initializeVector(SOL &vec) {
 
     mt19937 engine(rd());
     int i, j;
@@ -230,7 +201,7 @@ void initializeVector(vector<vector<int>>& vec) {
         for (int k = 1; k <= boardSize; ++k) {
             numVector.push_back(k);
         }
-        for (auto tup : fixedPointsData) {
+        for (auto tup: fixedPointsData) {
             int val = get<VAL>(tup);
             int x = get<X>(tup);
             if (x == i) {
@@ -254,11 +225,10 @@ void initializeVector(vector<vector<int>>& vec) {
 }
 
 
-
 // Generate an empty solutions vector, consisting of boardSize number of solution vectors
 void initializeSolutions() {
     for (int i = 0; i < POPULATION_SIZE; ++i) {
-        vector<vector<int>> vec;
+        SOL vec;
         initializeVector(vec);
         currentGenSolutions.push_back(vec);
     }
@@ -267,7 +237,7 @@ void initializeSolutions() {
 
 
 // Read data from received file, update different variables and fields accordingly.
-void readInputData(ifstream& fStream) {
+void readInputData(ifstream &fStream) {
     string line;
     int givenDigits;
     // Read board size line
@@ -280,7 +250,7 @@ void readInputData(ifstream& fStream) {
     if (givenDigits == 0 || boardSize == 0)
         printFormatError();
     // Read fixed matrix points
-    while(givenDigits > 0) {
+    while (givenDigits > 0) {
         int x, y, digit; // Coordinates of requested digit.
         if (getline(fStream, line)) {
             istringstream iss(line);
@@ -298,7 +268,7 @@ void readInputData(ifstream& fStream) {
     initializeSolutions();
     // Update results matrix with fixed points
     for (int i = 0; i < POPULATION_SIZE; ++i) {
-        for (auto tup : fixedPointsData) {
+        for (auto tup: fixedPointsData) {
             int x = get<X>(tup);
             int y = get<Y>(tup);
             int val = get<VAL>(tup);
@@ -332,20 +302,20 @@ void readInputData(ifstream& fStream) {
 }
 
 // Prints received solution
-void printSolution(vector<vector<int>> solutions) {
-    for (auto row : solutions) {
-        for (auto number : row) {
-            cout << number  << " ";
+void printSolution(SOL solutions) {
+    for (auto row: solutions) {
+        for (auto number: row) {
+            cout << number << " ";
         }
         cout << endl;
     }
 }
 
 
-void optimize(vector<vector<vector<int>>>& solsArray) {
+void optimize(SOL_ARR &solsArray) {
     int successful = 0, size = cellRelations.size();
     int x1, x2, y1, y2, i = 0;
-    for (auto solution : solsArray) {
+    for (auto solution: solsArray) {
         for (i = 0; i < size && successful < boardSize; ++i) {
             x1 = get<X1>(cellRelations[i]);
             y1 = get<Y1>(cellRelations[i]);
@@ -361,7 +331,7 @@ void optimize(vector<vector<vector<int>>>& solsArray) {
                 solution[x2][y2] = val1;
             } else {
                 auto val2coor = find(solution[x1].begin(), solution[x1].end(), val2);
-                auto val1coor =  find(solution[x2].begin(), solution[x2].end(), val1);
+                auto val1coor = find(solution[x2].begin(), solution[x2].end(), val1);
                 *val1coor = val2;
                 *val2coor = val1;
                 solution[x1][y1] = val2;
@@ -370,7 +340,7 @@ void optimize(vector<vector<vector<int>>>& solsArray) {
             ++successful;
         }
         // Second optimisation
-        for (int y = 0;  y < boardSize && successful < boardSize; ++y) {
+        for (int y = 0; y < boardSize && successful < boardSize; ++y) {
             vector<int> col;
 
             int val = 0, row;
@@ -394,6 +364,7 @@ void optimize(vector<vector<vector<int>>>& solsArray) {
                 bool containsNumber = false;
                 while (find(col.begin(), col.end(), j) != col.end()) {
                     auto a = find(col.begin(), col.end(), j);
+
                     col.erase(a);
                     containsNumber = true;
                 }
@@ -403,13 +374,35 @@ void optimize(vector<vector<vector<int>>>& solsArray) {
             auto numIndex = find(solution[row].begin(), solution[row].end(), j);
             if (isFixedPoint(row, numIndex - col.begin()))
                 continue;
+            bool flg = false;
+
+            for (auto coor : cellRelations) {
+                x1 = get<X1>(coor);
+                y1 = get<Y1>(coor);
+                x2 = get<X2>(coor);
+                y2 = get<Y2>(coor);
+                if (x1 == row && x2 == row) {
+                    if (y1 == y && y2 == numIndex - col.begin()) {
+                        if (j > val) {
+                            flg = true;
+                            break;
+                        }
+                    }
+                    if (y1 == numIndex - col.begin() && y2 == y) {
+                        if (val > j) {
+                            flg =true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!flg)
+                continue;
             *numIndex = val;
             solution[row][y] = j;
             ++successful;
         }
-
     }
-
 }
 
 
@@ -418,43 +411,25 @@ void basicSolver() {
 
     // Array of solutions proportional to fitness values
     vector<int> biasedSolutionIndexArr = getBiasedSolutionIndexArray(currentGenSolutions);
-    vector<vector<vector<int>>> newSolArr;
+    SOL_ARR newSolArr;
 
     // Inner loop, runs for POPULATION_SIZE/2, each time selecting 2 random solutions, performing crossover
     for (int j = 0; j < POPULATION_SIZE / 2; ++j) {
-
-        vector<vector<vector<int>>> children(2);
-        //while(true)
-        //do {
+        SOL_ARR children(2);
+        do {
+            children.clear();
             int parent1 = getRandomSolutionIndex(biasedSolutionIndexArr);
             int parent2 = getRandomSolutionIndex(biasedSolutionIndexArr);
-            //if (getFitnessScore(currentGenSolutions[parent1]) < maxScore / 2 && getFitnessScore(currentGenSolutions[parent2])  < maxScore / 3)
-              //  continue;
+
             children = crossover(currentGenSolutions[parent1], currentGenSolutions[parent2]);
             mutate(children[0]);
             mutate(children[1]);
-        //    break;
-        /*if ((getFitnessScore(children[0]) < maxScore / 5) && (getFitnessScore(children[1])  < maxScore / 5)) {
-            vector<vector<int>> vecA, vecB;
-            initializeVector(vecA);
-            initializeVector(vecB);
-            for (auto tup : fixedPointsData) {
-                int x = get<X>(tup);
-                int y = get<Y>(tup);
-                int val = get<VAL>(tup);
-                vecA[x][y] = val;
-                vecB[x][y] = val;
-            /}
-            newSolArr.push_back(vecA);
-            newSolArr.push_back(vecB);
+        } while (getFitnessScore(children[0]) < maxScore * 5 / 16 && getFitnessScore(children[1]) < maxScore * 5 / 16);
+        newSolArr.push_back(children[0]);
+        newSolArr.push_back(children[1]);
 
-        } else {*/
-            newSolArr.push_back(children[0]);
-            newSolArr.push_back(children[1]);
-        //}
 
     }
-    prevGenSolutions = vector<vector<vector<int>>>(currentGenSolutions);
     currentGenSolutions = newSolArr;
 
     if (getFitnessScore(currentBestSol) < getMaxSolScore())
@@ -462,32 +437,31 @@ void basicSolver() {
 }
 
 void darwinianSolver() {
-    vector<vector<vector<int>>> optimizedSolutions(currentGenSolutions);
+    SOL_ARR optimizedSolutions(currentGenSolutions);
     optimize(optimizedSolutions);
 
     // Array of solutions proportional to fitness values
     vector<int> biasedSolutionIndexArr = getBiasedSolutionIndexArray(optimizedSolutions);
-    vector<vector<vector<int>>> newSolArr;
+    SOL_ARR newSolArr;
 
     // Inner loop, runs for POPULATION_SIZE/2, each time selecting 2 random solutions, performing crossover
     for (int j = 0; j < POPULATION_SIZE / 2; ++j) {
-        vector<vector<vector<int>>> children(2);
-        //while(true)
-        //do {
-            int parent1 = getRandomSolutionIndex(biasedSolutionIndexArr);
-            int parent2 = getRandomSolutionIndex(biasedSolutionIndexArr);
-            //if (getFitnessScore(currentGenSolutions[parent1]) < maxScore / 2 && getFitnessScore(currentGenSolutions[parent2])  < maxScore / 3)
-                //continue;
+        SOL_ARR children(2);
+        int parent1, parent2;
+        do {
+            children.clear();
+            parent1 = getRandomSolutionIndex(biasedSolutionIndexArr);
+            parent2 = getRandomSolutionIndex(biasedSolutionIndexArr);
+
             children = crossover(currentGenSolutions[parent1], currentGenSolutions[parent2]);
             mutate(children[0]);
             mutate(children[1]);
-        //    break;
-        //} while ((getFitnessScore(children[0]) < maxScore / 2) && (getFitnessScore(children[1])  < maxScore / 2));
-        newSolArr.push_back(children[0]);
+        } while (getFitnessScore(children[0]) < maxScore * 5 / 16 && getFitnessScore(children[1]) < maxScore * 5 / 16);
+
+    newSolArr.push_back(children[0]);
         newSolArr.push_back(children[1]);
     }
 
-    prevGenSolutions = vector<vector<vector<int>>>(currentGenSolutions);
     currentGenSolutions = newSolArr;
 
     if (getFitnessScore(currentBestSol) < getMaxSolScore())
@@ -499,27 +473,26 @@ void lamarckianSolver() {
 
     // Array of solutions proportional to fitness values
     vector<int> biasedSolutionIndexArr = getBiasedSolutionIndexArray(currentGenSolutions);
-    vector<vector<vector<int>>> newSolArr;
+    SOL_ARR newSolArr;
 
     // Inner loop, runs for POPULATION_SIZE/2, each time selecting 2 random solutions, performing crossover
     for (int j = 0; j < POPULATION_SIZE / 2; ++j) {
-        vector<vector<vector<int>>> children(2);
-        //while(true)
-        //do {
-            int parent1 = getRandomSolutionIndex(biasedSolutionIndexArr);
-            int parent2 = getRandomSolutionIndex(biasedSolutionIndexArr);
-            //if (getFitnessScore(currentGenSolutions[parent1]) < maxScore / 2 && getFitnessScore(currentGenSolutions[parent2])  < maxScore / 3)
-                //continue;
+        SOL_ARR children(2);
+        int parent1, parent2;
+        do {
+            children.clear();
+            parent1 = getRandomSolutionIndex(biasedSolutionIndexArr);
+            parent2 = getRandomSolutionIndex(biasedSolutionIndexArr);
+
             children = crossover(currentGenSolutions[parent1], currentGenSolutions[parent2]);
             mutate(children[0]);
             mutate(children[1]);
-        //    break;
-        //} while ((getFitnessScore(children[0]) < maxScore / 2) && (getFitnessScore(children[1])  < maxScore / 2));
+        } while (getFitnessScore(children[0]) < maxScore * 5 / 16 && getFitnessScore(children[1]) < maxScore * 5 / 16);
+
         newSolArr.push_back(children[0]);
         newSolArr.push_back(children[1]);
     }
 
-    prevGenSolutions = vector<vector<vector<int>>>(currentGenSolutions);
     currentGenSolutions = newSolArr;
 
     if (getFitnessScore(currentBestSol) < getMaxSolScore())
@@ -552,14 +525,14 @@ void userPrompt() {
         }
     }
     int i = 0;
-    while(i < MAX_ITERATIONS) {
+    while (i < MAX_ITERATIONS) {
         double percentage = ((double) getMaxSolScore() / (double) maxScore) * 100;
 
         // Write data to file and print to stdout
-        outputFile << i + 1<< "," << maxScore << "," << getMaxSolScore() <<
+        outputFile << i + 1 << "," << maxScore << "," << getMaxSolScore() <<
                    "," << getAvgScore << "," << percentage << endl;
-        cout << "Generation: " << i + 1 <<  " | Max possible Fitness: " << maxScore << " | Max Fitness Score: " <<
-             getMaxSolScore() << " | Average Score: " << getAvgScore() << " | Percentage " << percentage  << "%" <<
+        cout << "Generation: " << i + 1 << " | Max possible Fitness: " << maxScore << " | Max Fitness Score: " <<
+             getMaxSolScore() << " | Average Score: " << getAvgScore() << " | Percentage " << percentage << "%" <<
              endl;
 
         if (!isSolved()) {
@@ -576,7 +549,7 @@ void userPrompt() {
             }
 
             // once in 20 generations add the overall best solution
-            if (i % 20 == 0)
+            if (i % 100 == 0)
                 currentGenSolutions.push_back(currentBestSol);
 
             ++i;
@@ -589,8 +562,7 @@ void userPrompt() {
 }
 
 
-
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     // Input validity check
     if (argc < 2) {
         cout << "Error: Not enough arguments" << endl;
@@ -610,15 +582,14 @@ int main(int argc, char** argv) {
     userPrompt();
     cout << endl << endl;
 
-    if (isSolved()){
+    if (isSolved()) {
         cout << "Solution found:" << endl;
         printSolution(currentGenSolutions[getMaxScoreIndex()]);
 
-    }
-    else {
+    } else {
         cout << "Closest found solution:" << endl;
         printSolution(currentBestSol);
     }
 
-        cout <<  endl << "Results written to results.csv" << endl;
+    cout << endl << "Results written to results.csv" << endl;
 }
